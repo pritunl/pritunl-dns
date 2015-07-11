@@ -27,6 +27,14 @@ func (r *Resolver) Lookup(proto string, req *dns.Msg) (
 	var resErr error
 
 	for i, nameserver := range []string{"8.8.8.8:53", "8.8.4.4:53"} {
+		if i != 0 && i%2 == 0 {
+			select {
+			case res = <-resChan:
+				return
+			case <-ticker.C:
+			}
+		}
+
 		waiter.Add(1)
 
 		go func(nameserver string) {
@@ -46,14 +54,6 @@ func (r *Resolver) Lookup(proto string, req *dns.Msg) (
 
 			waiter.Cancel()
 		}(nameserver)
-
-		if i%2 != 0 {
-			select {
-			case res = <-resChan:
-				return
-			case <-ticker.C:
-			}
-		}
 	}
 
 	waiter.Wait()
