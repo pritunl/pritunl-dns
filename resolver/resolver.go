@@ -10,6 +10,7 @@ import (
 type Resolver struct {
 	Timeout  time.Duration
 	Interval time.Duration
+	Servers  []string
 }
 
 func (r *Resolver) Lookup(proto string, req *dns.Msg) (
@@ -23,15 +24,21 @@ func (r *Resolver) Lookup(proto string, req *dns.Msg) (
 
 	resChan := make(chan *dns.Msg, 1)
 	waiter := utils.WaitCancel{}
-	ticker := time.NewTicker(r.Interval)
+	var ticker *time.Ticker
 	var resErr error
 
-	for i, nameserver := range []string{"8.8.8.8:53", "8.8.4.4:53"} {
-		if i != 0 && i%2 == 0 {
-			select {
-			case res = <-resChan:
-				return
-			case <-ticker.C:
+	if len(r.Servers) > 2 {
+		ticker = time.NewTicker(r.Interval)
+	}
+
+	for i, nameserver := range r.Servers {
+		if ticker != nil {
+			if i != 0 && i%2 == 0 {
+				select {
+				case res = <-resChan:
+					return
+				case <-ticker.C:
+				}
 			}
 		}
 
