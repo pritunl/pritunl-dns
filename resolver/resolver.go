@@ -15,8 +15,8 @@ type Resolver struct {
 	Servers  []string
 }
 
-func (r *Resolver) LookupUser(ques question.Question, subnet string,
-	r *dns.Msg) (msg *dns.Msg, err error) {
+func (r *Resolver) LookupUser(ques *question.Question, subnet string,
+	req *dns.Msg) (msg *dns.Msg, err error) {
 
 	if ques.Qclass != dns.TypeA {
 		err = &NotFoundError{
