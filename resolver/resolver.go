@@ -3,7 +3,9 @@ package resolver
 import (
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
+	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/utils"
+	"net"
 	"time"
 )
 
@@ -11,6 +13,38 @@ type Resolver struct {
 	Timeout  time.Duration
 	Interval time.Duration
 	Servers  []string
+}
+
+func (r *Resolver) LookupUser(ques question.Question, r *dns.Msg) (
+	msg *dns.Msg, err error) {
+
+	if ques.NameTrim == "user0.org0.vpn" {
+		msg := &dns.Msg{}
+		msg.SetReply(r)
+
+		switch ques.Qclass {
+		case dns.TypeA:
+			header := dns.RR_Header{
+				Name:   ques.Name,
+				Rrtype: dns.TypeA,
+				Class:  dns.ClassINET,
+				Ttl:    5,
+			}
+			record := &dns.A{
+				Hdr: header,
+				A:   net.ParseIP("10.0.0.10"),
+			}
+			msg.Answer = append(msg.Answer, record)
+		}
+
+		return
+	}
+
+	err = &NotFoundError{
+		errors.New("resolver: User not found"),
+	}
+
+	return
 }
 
 func (r *Resolver) Lookup(proto string, req *dns.Msg) (
