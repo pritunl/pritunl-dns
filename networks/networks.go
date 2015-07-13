@@ -40,9 +40,15 @@ func Update() (err error) {
 }
 
 func Find(ip net.IP) string {
-	for subnetStr, subnet := range Networks {
-		if subnet.Contains(ip) {
-			return subnetStr
+	for i := 0; i < 2; i++ {
+		for subnetStr, subnet := range Networks {
+			if subnet.Contains(ip) {
+				return subnetStr
+			}
+		}
+
+		if i == 0 {
+			Update()
 		}
 	}
 
