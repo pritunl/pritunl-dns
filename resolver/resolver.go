@@ -18,24 +18,28 @@ type Resolver struct {
 func (r *Resolver) LookupUser(ques question.Question, r *dns.Msg) (
 	msg *dns.Msg, err error) {
 
+	if ques.Qclass != dns.TypeA {
+		err = &NotFoundError{
+			errors.New("resolver: User not found"),
+		}
+		return
+	}
+
 	if ques.NameTrim == "user0.org0.vpn" {
 		msg := &dns.Msg{}
 		msg.SetReply(r)
 
-		switch ques.Qclass {
-		case dns.TypeA:
-			header := dns.RR_Header{
-				Name:   ques.Name,
-				Rrtype: dns.TypeA,
-				Class:  dns.ClassINET,
-				Ttl:    5,
-			}
-			record := &dns.A{
-				Hdr: header,
-				A:   net.ParseIP("10.0.0.10"),
-			}
-			msg.Answer = append(msg.Answer, record)
+		header := dns.RR_Header{
+			Name:   ques.Name,
+			Rrtype: dns.TypeA,
+			Class:  dns.ClassINET,
+			Ttl:    5,
 		}
+		record := &dns.A{
+			Hdr: header,
+			A:   net.ParseIP("10.0.0.10"),
+		}
+		msg.Answer = append(msg.Answer, record)
 
 		return
 	}
