@@ -56,7 +56,7 @@ func NewHandler(timeout, interval time.Duration) (h *Handler) {
 		reslvr: &resolver.Resolver{
 			Timeout:  timeout,
 			Interval: interval,
-			Servers: []string{"8.8.8.8:53", "8.8.4.4:53"},
+			Servers:  []string{"8.8.8.8:53", "8.8.4.4:53"},
 		},
 	}
 
