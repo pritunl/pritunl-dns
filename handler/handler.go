@@ -6,6 +6,7 @@ import (
 	"github.com/pritunl/pritunl-dns/resolver"
 	"net"
 	"time"
+	"strings"
 )
 
 type Handler struct {
@@ -15,47 +16,13 @@ type Handler struct {
 func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 	ques := question.NewQuestion(r.Question[0])
 
-	if ques.IsIpQuery {
-		// TODO
-		if ques.NameTrim == "test.pritunl.com" {
-			msg := &dns.Msg{}
-			msg.SetReply(r)
-
-			switch ques.Qclass {
-			case dns.TypeA:
-				header := dns.RR_Header{
-					Name:   ques.Name,
-					Rrtype: dns.TypeA,
-					Class:  dns.ClassINET,
-					Ttl:    5,
-				}
-				record := &dns.A{
-					Hdr: header,
-					A:   net.ParseIP("10.0.0.10"),
-				}
-				msg.Answer = append(msg.Answer, record)
-			case dns.TypeAAAA:
-				header := dns.RR_Header{
-					Name:   ques.Name,
-					Rrtype: dns.TypeAAAA,
-					Class:  dns.ClassINET,
-					Ttl:    5,
-				}
-				record := &dns.AAAA{
-					Hdr:  header,
-					AAAA: net.ParseIP("10.0.0.10"),
-				}
-				msg.Answer = append(msg.Answer, record)
-			}
-
-			w.WriteMsg(msg)
-			return
-		}
-
-		if ques.NameTrim == "error" {
+	if ques.IsIpQuery && strings.HasSuffix(ques.NameTrim, ".vpn") {
+		msg, err := h.reslvr.LookupUser(ques, r)
+		if err != nil {
 			dns.HandleFailed(w, r)
 			return
 		}
+		w.WriteMsg(msg)
 	}
 
 	res, err := h.reslvr.Lookup(proto, r)
