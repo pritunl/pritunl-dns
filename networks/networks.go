@@ -1,11 +1,15 @@
 package networks
 
 import (
-	"net"
 	"github.com/dropbox/godropbox/errors"
+	"net"
+	"time"
 )
 
-var Networks = map[string]*net.IPNet{}
+var (
+	Networks   = map[string]*net.IPNet{}
+	lastUpdate = time.Time{}
+)
 
 func Update() (err error) {
 	ifaces, err := net.Interfaces()
@@ -47,7 +51,8 @@ func Find(ip net.IP) string {
 			}
 		}
 
-		if i == 0 {
+		if i == 0 && time.Since(lastUpdate) > 30*time.Second {
+			lastUpdate = time.Now()
 			Update()
 		}
 	}
