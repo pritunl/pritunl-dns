@@ -38,3 +38,13 @@ func Update() (err error) {
 
 	return
 }
+
+func Find(ip net.IP) string {
+	for subnetStr, subnet := range Networks {
+		if subnet.Contains(ip) {
+			return subnetStr
+		}
+	}
+
+	return ""
+}
