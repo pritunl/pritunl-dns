@@ -26,8 +26,8 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 	}
 
 	if ques.NameTrim == "user0.org0.vpn" {
-		msg := &dns.Msg{}
-		msg.SetReply(r)
+		msg = &dns.Msg{}
+		msg.SetReply(req)
 
 		header := dns.RR_Header{
 			Name:   ques.Name,
