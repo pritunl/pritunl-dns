@@ -20,7 +20,7 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 
 	if ques.Qclass != dns.TypeA {
 		err = &NotFoundError{
-			errors.New("resolver: User not found"),
+			errors.New("resolver: Invalid dns type"),
 		}
 		return
 	}
