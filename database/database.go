@@ -2,8 +2,6 @@ package database
 
 import (
 	"github.com/Sirupsen/logrus"
-	"github.com/blckur/blckur/constants"
-	"github.com/blckur/blckur/requires"
 	"github.com/dropbox/godropbox/errors"
 	"labix.org/v2/mgo"
 	"os"
@@ -76,20 +74,16 @@ func init() {
 	mongoUrl = os.Getenv("DB")
 	mongoPrefix = os.Getenv("DB_PREFIX")
 
-	module := requires.New("database")
-
-	module.Handler = func() {
-		for {
-			err := Connect()
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"error": err,
-				}).Error("database: Connection")
-			} else {
-				break
-			}
-
-			time.Sleep(constants.RetryDelay)
+	for {
+		err := Connect()
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("database: Connection")
+		} else {
+			break
 		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
