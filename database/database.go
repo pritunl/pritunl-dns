@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	MongoUrl    string
-	MongoPrefix string
+	mongoUrl    string
+	mongoPrefix string
 	Session     *mgo.Session
 )
 
@@ -35,12 +35,12 @@ func (d *Database) getCollection(name string) (coll *Collection) {
 }
 
 func (d *Database) UsersIp() (coll *Collection) {
-	coll = d.getCollection(MongoPrefix + "users_ip")
+	coll = d.getCollection(mongoPrefix + "users_ip")
 	return
 }
 
 func Connect() (err error) {
-	Session, err = mgo.Dial(MongoUrl)
+	Session, err = mgo.Dial(mongoUrl)
 	if err != nil {
 		err = &ConnectionError{
 			errors.Wrap(err, "database: Connection error"),
@@ -57,8 +57,8 @@ func GetDatabase() (db *Database) {
 	session := Session.Copy()
 
 	var dbName string
-	if x := strings.LastIndex(MongoUrl, "/"); x != -1 {
-		dbName = MongoUrl[x+1:]
+	if x := strings.LastIndex(mongoUrl, "/"); x != -1 {
+		dbName = mongoUrl[x+1:]
 	} else {
 		dbName = "pritunl"
 	}
@@ -73,8 +73,8 @@ func GetDatabase() (db *Database) {
 }
 
 func init() {
-	MongoUrl = os.Getenv("DB")
-	MongoPrefix = os.Getenv("DB_PREFIX")
+	mongoUrl = os.Getenv("DB")
+	mongoPrefix = os.Getenv("DB_PREFIX")
 
 	module := requires.New("database")
 
