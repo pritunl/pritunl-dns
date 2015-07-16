@@ -6,7 +6,6 @@ import (
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
 	"net"
-	"strings"
 	"time"
 )
 
@@ -25,7 +24,7 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 		subnet = networks.Find(ip.IP)
 	}
 
-	if ques.IsIpQuery && strings.HasSuffix(ques.NameTrim, ".vpn") {
+	if ques.IsIpQuery && ques.TopDomain == "vpn" {
 		msg, err := h.reslvr.LookupUser(ques, subnet, r)
 		if err != nil {
 			dns.HandleFailed(w, r)
