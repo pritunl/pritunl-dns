@@ -10,7 +10,6 @@ type Question struct {
 	NameTrim  string
 	TopDomain string
 	Domain    string
-	Subdomain string
 	IsIpQuery bool
 }
 
@@ -48,15 +47,7 @@ func NewQuestion(ques dns.Question) (q *Question) {
 	}
 
 	q.TopDomain = name[n+1:]
-	name = name[:n]
-
-	n = strings.LastIndex(name, ".")
-	if n == -1 {
-		return
-	}
-
 	q.Domain = name[:n]
-	q.Subdomain = name[n+1:]
 
 	return
 }
