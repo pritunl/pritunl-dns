@@ -11,3 +11,7 @@ type NotFoundError struct {
 type ResolveError struct {
 	errors.DropboxError
 }
+
+type UnknownError struct {
+	errors.DropboxError
+}
