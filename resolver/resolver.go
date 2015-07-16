@@ -2,7 +2,6 @@ package resolver
 
 import (
 	"crypto/md5"
-	"fmt"
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/database"
@@ -10,8 +9,8 @@ import (
 	"github.com/pritunl/pritunl-dns/utils"
 	"labix.org/v2/mgo/bson"
 	"net"
-	"time"
 	"strings"
+	"time"
 )
 
 type Resolver struct {
@@ -79,7 +78,7 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 		}
 		record := &dns.A{
 			Hdr: header,
-			A:   net.ParseIP("10.0.0.10"),
+			A:   ip,
 		}
 		msg.Answer = append(msg.Answer, record)
 
