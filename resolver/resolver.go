@@ -25,7 +25,7 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 		return
 	}
 
-	if ques.Subdomain == "user0" && ques.Domain == "org0" {
+	if ques.Domain == "user0.org0" {
 		msg = &dns.Msg{}
 		msg.SetReply(req)
 
