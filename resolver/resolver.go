@@ -1,12 +1,17 @@
 package resolver
 
 import (
+	"crypto/md5"
+	"fmt"
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
+	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/utils"
+	"labix.org/v2/mgo/bson"
 	"net"
 	"time"
+	"strings"
 )
 
 type Resolver struct {
@@ -23,6 +28,43 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 			errors.New("resolver: Invalid dns type"),
 		}
 		return
+	}
+
+	db := database.GetDatabase()
+	coll := db.UsersIp()
+
+	key := md5.Sum([]byte(ques.Domain))
+	data := map[string]interface{}{}
+	err = coll.FindOneId(bson.Binary{
+		Kind: 0x05,
+		Data: key[:],
+	}, &data)
+	if err != nil {
+		return
+	}
+
+	subnet = strings.Replace(subnet, ".", "-", -1)
+	ipInf, ok := data[subnet]
+	ipStr := ""
+	if ok {
+		ipStr = ipInf.(string)
+	} else {
+		ipStr = data["last"].(string)
+	}
+	ipStr = strings.Split(ipStr, "/")[0]
+
+	if ipStr == "" {
+		err = &UnknownError{
+			errors.New("resolver: Failed to find ip"),
+		}
+		return
+	}
+
+	ip := net.ParseIP(ipStr)
+	if err != nil {
+		err = &UnknownError{
+			errors.Wrap(err, "resolver: Unknown parse error"),
+		}
 	}
 
 	if ques.Domain == "user0.org0" {
