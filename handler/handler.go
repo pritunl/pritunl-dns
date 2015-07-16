@@ -24,6 +24,11 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 		subnet = networks.Find(ip.IP)
 	}
 
+	if subnet == "" {
+		dns.HandleFailed(w, r)
+		return
+	}
+
 	if ques.IsIpQuery && ques.TopDomain == "vpn" {
 		msg, err := h.reslvr.LookupUser(ques, subnet, r)
 		if err != nil {
