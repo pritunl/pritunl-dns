@@ -32,8 +32,8 @@ func (d *Database) getCollection(name string) (coll *Collection) {
 	return
 }
 
-func (d *Database) UsersIp() (coll *Collection) {
-	coll = d.getCollection(mongoPrefix + "users_ip")
+func (d *Database) Clients() (coll *Collection) {
+	coll = d.getCollection(mongoPrefix + "clients")
 	return
 }
 

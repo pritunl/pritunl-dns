@@ -13,6 +13,13 @@ import (
 	"time"
 )
 
+type Client struct {
+	Id          bson.ObjectId `bson:"_id"`
+	Domain      bson.Binary   `bson:"domain"`
+	Network     string        `bson:"network"`
+	VirtAddress string        `bson:"virt_address"`
+}
+
 type Resolver struct {
 	Timeout  time.Duration
 	Interval time.Duration
@@ -30,25 +37,23 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 	}
 
 	db := database.GetDatabase()
-	coll := db.UsersIp()
+	coll := db.Clients()
 
 	key := md5.Sum([]byte(ques.Domain))
-	data := map[string]interface{}{}
-	err = coll.FindOneId(bson.Binary{
-		Kind: 0x05,
-		Data: key[:],
-	}, &data)
-	if err != nil {
-		return
-	}
+	cursor := coll.Find(bson.M{
+		"domain": bson.Binary{
+			Kind: 0x05,
+			Data: key[:],
+		},
+	}).Iter()
 
-	subnet = strings.Replace(subnet, ".", "-", -1)
-	ipInf, ok := data[subnet]
 	ipStr := ""
-	if ok {
-		ipStr = ipInf.(string)
-	} else {
-		ipStr = data["last"].(string)
+	clnt := Client{}
+	for cursor.Next(&clnt) {
+		ipStr = clnt.VirtAddress
+		if clnt.Network == subnet {
+			break
+		}
 	}
 	ipStr = strings.Split(ipStr, "/")[0]
 
@@ -66,28 +71,20 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 		}
 	}
 
-	if ques.Domain == "user0.org0" {
-		msg = &dns.Msg{}
-		msg.SetReply(req)
+	msg = &dns.Msg{}
+	msg.SetReply(req)
 
-		header := dns.RR_Header{
-			Name:   ques.Name,
-			Rrtype: dns.TypeA,
-			Class:  dns.ClassINET,
-			Ttl:    5,
-		}
-		record := &dns.A{
-			Hdr: header,
-			A:   ip,
-		}
-		msg.Answer = append(msg.Answer, record)
-
-		return
+	header := dns.RR_Header{
+		Name:   ques.Name,
+		Rrtype: dns.TypeA,
+		Class:  dns.ClassINET,
+		Ttl:    5,
 	}
-
-	err = &NotFoundError{
-		errors.New("resolver: User not found"),
+	record := &dns.A{
+		Hdr: header,
+		A:   ip,
 	}
+	msg.Answer = append(msg.Answer, record)
 
 	return
 }
