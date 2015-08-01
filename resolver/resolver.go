@@ -14,10 +14,8 @@ import (
 )
 
 type Client struct {
-	Id          bson.ObjectId `bson:"_id"`
-	Domain      bson.Binary   `bson:"domain"`
-	Network     string        `bson:"network"`
-	VirtAddress string        `bson:"virt_address"`
+	Network     string `bson:"network"`
+	VirtAddress string `bson:"virt_address"`
 }
 
 type Resolver struct {
