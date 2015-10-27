@@ -36,15 +36,15 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 		w.WriteMsg(msg)
-	}
+	} else {
+		res, err := h.reslvr.Lookup(proto, subnet, r)
+		if err != nil {
+			dns.HandleFailed(w, r)
+			return
+		}
 
-	res, err := h.reslvr.Lookup(proto, r)
-	if err != nil {
-		dns.HandleFailed(w, r)
-		return
+		w.WriteMsg(res)
 	}
-
-	w.WriteMsg(res)
 }
 
 func (h *Handler) HandleTcp(w dns.ResponseWriter, r *dns.Msg) {
