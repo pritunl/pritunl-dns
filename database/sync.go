@@ -19,7 +19,10 @@ func dnsSync() {
 		db := GetDatabase()
 		coll := db.Servers()
 
-		cursor := coll.Find(bson.M{}).Iter()
+		cursor := coll.Find(bson.M{}).Select(bson.M{
+			"network":     1,
+			"dns_servers": 1,
+		}).Iter()
 
 		svr := server{}
 		for cursor.Next(&svr) {
