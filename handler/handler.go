@@ -5,6 +5,7 @@ import (
 	"github.com/pritunl/pritunl-dns/networks"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
+	"github.com/pritunl/pritunl-dns/constants"
 	"net"
 	"time"
 )
@@ -60,7 +61,7 @@ func NewHandler(timeout, interval time.Duration) (h *Handler) {
 		reslvr: &resolver.Resolver{
 			Timeout:  timeout,
 			Interval: interval,
-			Servers:  []string{"8.8.8.8:53", "8.8.4.4:53"},
+			Servers:  constants.DefaultDnsServers,
 		},
 	}
 
