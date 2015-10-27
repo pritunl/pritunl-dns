@@ -19,9 +19,9 @@ type Client struct {
 }
 
 type Resolver struct {
-	Timeout  time.Duration
-	Interval time.Duration
-	Servers  []string
+	Timeout        time.Duration
+	Interval       time.Duration
+	DefaultServers []string
 }
 
 func (r *Resolver) LookupUser(ques *question.Question, subnet string,
@@ -104,7 +104,7 @@ func (r *Resolver) Lookup(proto string, subnet string, req *dns.Msg) (
 	servers := database.DnsServers[subnet]
 
 	if len(servers) == 0 {
-		servers = r.Servers
+		servers = r.DefaultServers
 	}
 
 	if len(servers) > 2 {

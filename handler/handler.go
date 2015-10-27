@@ -2,10 +2,10 @@ package handler
 
 import (
 	"github.com/miekg/dns"
+	"github.com/pritunl/pritunl-dns/constants"
 	"github.com/pritunl/pritunl-dns/networks"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
-	"github.com/pritunl/pritunl-dns/constants"
 	"net"
 	"time"
 )
@@ -59,9 +59,9 @@ func (h *Handler) HandleUdp(w dns.ResponseWriter, r *dns.Msg) {
 func NewHandler(timeout, interval time.Duration) (h *Handler) {
 	h = &Handler{
 		reslvr: &resolver.Resolver{
-			Timeout:  timeout,
-			Interval: interval,
-			Servers:  constants.DefaultDnsServers,
+			Timeout:        timeout,
+			Interval:       interval,
+			DefaultServers: constants.DefaultDnsServers,
 		},
 	}
 
