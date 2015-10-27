@@ -14,8 +14,6 @@ type server struct {
 
 func dnsSync() {
 	for {
-		time.Sleep(mongoRate)
-
 		dnsServers := map[string][]string{}
 
 		db := GetDatabase()
@@ -33,5 +31,7 @@ func dnsSync() {
 		}
 
 		DnsServers = dnsServers
+
+		time.Sleep(mongoRate)
 	}
 }
