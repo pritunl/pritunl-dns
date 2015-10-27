@@ -5,6 +5,7 @@ import (
 	"github.com/dropbox/godropbox/errors"
 	"labix.org/v2/mgo"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -12,6 +13,7 @@ import (
 var (
 	mongoUrl    string
 	mongoPrefix string
+	mongoRate   time.Duration
 	Session     *mgo.Session
 )
 
@@ -78,6 +80,18 @@ func GetDatabase() (db *Database) {
 func init() {
 	mongoUrl = os.Getenv("DB")
 	mongoPrefix = os.Getenv("DB_PREFIX")
+
+	mongoRateStr := os.Getenv("DB_SYNC_RATE")
+	if mongoRateStr != "" {
+		mongoRateNum, err := strconv.Atoi(mongoRateStr)
+		if err != nil {
+			panic(err)
+		}
+
+		mongoRate = time.Duration(mongoRateNum) * time.Second
+	} else {
+		mongoRate = 60 * time.Second
+	}
 
 	for {
 		err := Connect()
