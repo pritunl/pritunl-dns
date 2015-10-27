@@ -105,4 +105,6 @@ func init() {
 
 		time.Sleep(1 * time.Second)
 	}
+
+	go dnsSync()
 }
