@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"labix.org/v2/mgo/bson"
 	"time"
 )
@@ -34,7 +33,5 @@ func dnsSync() {
 		}
 
 		DnsServers = dnsServers
-
-		fmt.Println(DnsServers)
 	}
 }
