@@ -87,7 +87,7 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 	return
 }
 
-func (r *Resolver) Lookup(proto string, req *dns.Msg) (
+func (r *Resolver) Lookup(proto string, subnet string, req *dns.Msg) (
 	res *dns.Msg, err error) {
 
 	client := &dns.Client{
@@ -101,11 +101,17 @@ func (r *Resolver) Lookup(proto string, req *dns.Msg) (
 	var ticker *time.Ticker
 	var resErr error
 
-	if len(r.Servers) > 2 {
+	servers := database.DnsServers[subnet]
+
+	if len(servers) == 0 {
+		servers = r.Servers
+	}
+
+	if len(servers) > 2 {
 		ticker = time.NewTicker(r.Interval)
 	}
 
-	for i, nameserver := range r.Servers {
+	for i, nameserver := range servers {
 		if ticker != nil {
 			if i != 0 && i%2 == 0 {
 				select {
