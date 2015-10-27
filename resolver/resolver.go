@@ -43,6 +43,9 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 			Kind: 0x05,
 			Data: key[:],
 		},
+	}).Select(bson.M{
+		"network":      1,
+		"virt_address": 1,
 	}).Iter()
 
 	ipStr := ""
