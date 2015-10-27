@@ -3,6 +3,7 @@ package database
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/dropbox/godropbox/errors"
+	"github.com/pritunl/pritunl-dns/constants"
 	"labix.org/v2/mgo"
 	"os"
 	"strconv"
@@ -90,7 +91,7 @@ func init() {
 
 		mongoRate = time.Duration(mongoRateNum) * time.Second
 	} else {
-		mongoRate = 60 * time.Second
+		mongoRate = constants.DefaultDatabaseSyncRate
 	}
 
 	for {
