@@ -37,6 +37,11 @@ func (d *Database) Clients() (coll *Collection) {
 	return
 }
 
+func (d *Database) Servers() (coll *Collection) {
+	coll = d.getCollection(mongoPrefix + "servers")
+	return
+}
+
 func Connect() (err error) {
 	Session, err = mgo.Dial(mongoUrl)
 	if err != nil {
