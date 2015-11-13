@@ -3,6 +3,7 @@ package networks
 import (
 	"github.com/dropbox/godropbox/errors"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -23,6 +24,10 @@ func Update() (err error) {
 	networks := map[string]*net.IPNet{}
 
 	for _, iface := range ifaces {
+		if !strings.Contains(iface.Name, "tun") {
+			continue
+		}
+
 		addrs, err := iface.Addrs()
 		if err != nil {
 			continue
