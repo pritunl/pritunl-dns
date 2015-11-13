@@ -54,6 +54,8 @@ func Find(ip net.IP) string {
 		if i == 0 && time.Since(lastUpdate) > 30*time.Second {
 			lastUpdate = time.Now()
 			Update()
+		} else {
+			break
 		}
 	}
 
