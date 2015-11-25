@@ -12,29 +12,33 @@ type server struct {
 	DnsServers []string `bson:"dns_servers"`
 }
 
-func dnsSync() {
-	for {
-		dnsServers := map[string][]string{}
+func sync() {
+	dnsServers := map[string][]string{}
 
-		db := GetDatabase()
-		coll := db.Servers()
+	db := GetDatabase()
+	defer db.Close()
+	coll := db.Servers()
 
-		cursor := coll.Find(bson.M{}).Select(bson.M{
-			"network":     1,
-			"dns_servers": 1,
-		}).Iter()
+	cursor := coll.Find(bson.M{}).Select(bson.M{
+		"network":     1,
+		"dns_servers": 1,
+	}).Iter()
 
-		svr := server{}
-		for cursor.Next(&svr) {
-			for i, dnsSvr := range svr.DnsServers {
-				svr.DnsServers[i] = dnsSvr + ":53"
-			}
-
-			dnsServers[svr.Network] = svr.DnsServers
+	svr := server{}
+	for cursor.Next(&svr) {
+		for i, dnsSvr := range svr.DnsServers {
+			svr.DnsServers[i] = dnsSvr + ":53"
 		}
 
-		DnsServers = dnsServers
+		dnsServers[svr.Network] = svr.DnsServers
+	}
 
+	DnsServers = dnsServers
+}
+
+func dnsSync() {
+	for {
+		sync()
 		time.Sleep(mongoRate)
 	}
 }
