@@ -35,6 +35,7 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 	}
 
 	db := database.GetDatabase()
+	defer db.Close()
 	coll := db.Clients()
 
 	key := md5.Sum([]byte(ques.Domain))
