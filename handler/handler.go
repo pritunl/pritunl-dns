@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/constants"
+	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/networks"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
@@ -31,14 +32,15 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 	}
 
 	if ques.IsIpQuery && ques.TopDomain == "vpn" {
-		msg, err := h.reslvr.LookupUser(ques, subnet, r)
+		msg, err := h.reslvr.LookupUser(proto, ques, subnet, r)
 		if err != nil {
 			dns.HandleFailed(w, r)
 			return
 		}
 		w.WriteMsg(msg)
 	} else {
-		res, err := h.reslvr.Lookup(proto, subnet, r)
+		servers := database.DnsServers[subnet]
+		res, err := h.reslvr.Lookup(proto, servers, r)
 		if err != nil {
 			dns.HandleFailed(w, r)
 			return

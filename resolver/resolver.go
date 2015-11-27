@@ -14,8 +14,10 @@ import (
 )
 
 type Client struct {
-	Network     string `bson:"network"`
-	VirtAddress string `bson:"virt_address"`
+	Network     string   `bson:"network"`
+	VirtAddress string   `bson:"virt_address"`
+	DnsServers  []string `bson:"dns_servers"`
+	DnsSuffix   string   `bson:"dns_suffix"`
 }
 
 type Resolver struct {
@@ -24,8 +26,8 @@ type Resolver struct {
 	DefaultServers []string
 }
 
-func (r *Resolver) LookupUser(ques *question.Question, subnet string,
-	req *dns.Msg) (msg *dns.Msg, err error) {
+func (r *Resolver) LookupUser(proto string, ques *question.Question,
+	subnet string, req *dns.Msg) (msg *dns.Msg, err error) {
 
 	if ques.Qclass != dns.TypeA {
 		err = &NotFoundError{
@@ -34,11 +36,19 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 		return
 	}
 
+	n := utils.LastNthIndex(ques.Domain, ".", 2)
+
+	domain := ques.Domain[n+1:]
+	subDomain := ""
+	if n > 0 {
+		subDomain = ques.Domain[:n]
+	}
+
 	db := database.GetDatabase()
 	defer db.Close()
 	coll := db.Clients()
 
-	key := md5.Sum([]byte(ques.Domain))
+	key := md5.Sum([]byte(domain))
 	cursor := coll.Find(bson.M{
 		"domain": bson.Binary{
 			Kind: 0x05,
@@ -47,51 +57,96 @@ func (r *Resolver) LookupUser(ques *question.Question, subnet string,
 	}).Select(bson.M{
 		"network":      1,
 		"virt_address": 1,
+		"dns_servers":  1,
+		"dns_suffix":   1,
 	}).Iter()
 
-	ipStr := ""
 	clnt := Client{}
 	for cursor.Next(&clnt) {
-		ipStr = clnt.VirtAddress
 		if clnt.Network == subnet {
 			break
 		}
 	}
-	ipStr = strings.Split(ipStr, "/")[0]
 
-	if ipStr == "" {
+	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
+	if clientIpStr == "" {
 		err = &UnknownError{
 			errors.New("resolver: Failed to find ip"),
 		}
 		return
 	}
 
-	ip := net.ParseIP(ipStr)
+	clientIp := net.ParseIP(clientIpStr)
 	if err != nil {
 		err = &UnknownError{
 			errors.Wrap(err, "resolver: Unknown parse error"),
 		}
 	}
 
-	msg = &dns.Msg{}
-	msg.SetReply(req)
+	if subDomain == "" {
+		msg = &dns.Msg{}
+		msg.SetReply(req)
 
-	header := dns.RR_Header{
-		Name:   ques.Name,
-		Rrtype: dns.TypeA,
-		Class:  dns.ClassINET,
-		Ttl:    5,
+		header := dns.RR_Header{
+			Name:   ques.Name,
+			Rrtype: dns.TypeA,
+			Class:  dns.ClassINET,
+			Ttl:    5,
+		}
+		record := &dns.A{
+			Hdr: header,
+			A:   clientIp,
+		}
+		msg.Answer = append(msg.Answer, record)
+	} else {
+		servers := clnt.DnsServers
+
+		origNames := make([]string, len(req.Question))
+
+		for i, ques := range req.Question {
+			n := utils.LastNthIndex(ques.Name, ".", 4)
+			if n == -1 {
+				err = &ResolveError{
+					errors.New("resolver: Failed to parse question name"),
+				}
+				return
+			}
+
+			name := ques.Name[:n+1]
+			if clnt.DnsSuffix != "" {
+				name += clnt.DnsSuffix + "."
+			}
+
+			origNames[i] = ques.Name
+			req.Question[i].Name = name
+		}
+
+		defer func() {
+			for i, _ := range req.Question {
+				req.Question[i].Name = origNames[i]
+			}
+		}()
+
+		for i, svr := range servers {
+			if strings.Index(svr, ":") == -1 {
+				servers[i] = svr + ":53"
+			}
+		}
+
+		msg, err = r.Lookup(proto, servers, req)
+		if err != nil {
+			return
+		}
+
+		for i, _ := range msg.Question {
+			msg.Question[i].Name = origNames[i]
+		}
 	}
-	record := &dns.A{
-		Hdr: header,
-		A:   ip,
-	}
-	msg.Answer = append(msg.Answer, record)
 
 	return
 }
 
-func (r *Resolver) Lookup(proto string, subnet string, req *dns.Msg) (
+func (r *Resolver) Lookup(proto string, servers []string, req *dns.Msg) (
 	res *dns.Msg, err error) {
 
 	client := &dns.Client{
@@ -104,8 +159,6 @@ func (r *Resolver) Lookup(proto string, subnet string, req *dns.Msg) (
 	waiter := utils.WaitCancel{}
 	var ticker *time.Ticker
 	var resErr error
-
-	servers := database.DnsServers[subnet]
 
 	if len(servers) == 0 {
 		servers = r.DefaultServers
