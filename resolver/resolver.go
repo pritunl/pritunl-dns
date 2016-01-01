@@ -68,6 +68,12 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		}
 	}
 
+	err = cursor.Err()
+	if err != nil {
+		err = database.ParseError(err)
+		return
+	}
+
 	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
 	if clientIpStr == "" {
 		err = &UnknownError{
