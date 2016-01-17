@@ -11,4 +11,3 @@ Thumbs.db
 *.egg-info
 .sass-cache
 /pritunl-dns
-/pritunl-dns.iml
