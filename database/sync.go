@@ -12,7 +12,7 @@ type server struct {
 	DnsServers []string `bson:"dns_servers"`
 }
 
-func sync() {
+func sync() (err error) {
 	dnsServers := map[string][]string{}
 
 	db := GetDatabase()
@@ -33,7 +33,15 @@ func sync() {
 		dnsServers[svr.Network] = svr.DnsServers
 	}
 
+	err = cursor.Err()
+	if err != nil {
+		err = ParseError(err)
+		return
+	}
+
 	DnsServers = dnsServers
+
+	return
 }
 
 func dnsSync() {
