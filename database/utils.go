@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 	"github.com/dropbox/godropbox/errors"
-	"labix.org/v2/mgo"
+	"gopkg.in/mgo.v2"
 )
 
 // Get mongodb error code from error

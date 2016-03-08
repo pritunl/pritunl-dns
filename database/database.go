@@ -4,7 +4,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/dropbox/godropbox/errors"
 	"github.com/pritunl/pritunl-dns/constants"
-	"labix.org/v2/mgo"
+	"gopkg.in/mgo.v2"
 	"os"
 	"strconv"
 	"strings"

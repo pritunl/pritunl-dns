@@ -7,7 +7,7 @@ import (
 	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/utils"
-	"labix.org/v2/mgo/bson"
+	"gopkg.in/mgo.v2/bson"
 	"net"
 	"strings"
 	"time"
