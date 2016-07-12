@@ -63,7 +63,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 
 	clnt := Client{}
 	for cursor.Next(&clnt) {
-		if clnt.Network == subnet {
+		if clnt.Network == subnet || subnet == "" {
 			break
 		}
 	}
