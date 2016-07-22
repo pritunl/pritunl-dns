@@ -33,6 +33,13 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 			return
 		}
 		w.WriteMsg(msg)
+	} else if ques.Qclass == dns.ClassINET && ques.Qtype == dns.TypePTR {
+		msg, err := h.reslvr.LookupReverse(ques, r)
+		if err != nil {
+			dns.HandleFailed(w, r)
+			return
+		}
+		w.WriteMsg(msg)
 	} else {
 		if subnet == "" {
 			for subnet, _ = range database.DnsServers {

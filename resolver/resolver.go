@@ -15,6 +15,7 @@ import (
 
 type Client struct {
 	Network     string   `bson:"network"`
+	DomainName  string   `bson:"domain_name"`
 	VirtAddress string   `bson:"virt_address"`
 	DnsServers  []string `bson:"dns_servers"`
 	DnsSuffix   string   `bson:"dns_suffix"`
@@ -103,7 +104,8 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			Hdr: header,
 			A:   clientIp,
 		}
-		msg.Answer = append(msg.Answer, record)
+		msg.Answer = make([]dns.RR, 1)
+		msg.Answer[0] = record
 	} else {
 		servers := clnt.DnsServers
 
@@ -148,6 +150,51 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			msg.Question[i].Name = origNames[i]
 		}
 	}
+
+	return
+}
+
+func (r *Resolver) LookupReverse(ques *question.Question, req *dns.Msg) (
+	msg *dns.Msg, err error) {
+
+	if ques.Qtype != dns.TypePTR {
+		err = &NotFoundError{
+			errors.New("resolver: Invalid dns type"),
+		}
+		return
+	}
+
+	db := database.GetDatabase()
+	defer db.Close()
+	coll := db.Clients()
+
+	clnt := Client{}
+	err = coll.Find(bson.M{
+		"virt_address_num": ques.AddressNum,
+	}).Select(bson.M{
+		"domain_name": 1,
+	}).One(&clnt)
+	if err != nil {
+		println(err.Error())
+		err = database.ParseError(err)
+		return
+	}
+
+	msg = &dns.Msg{}
+	msg.SetReply(req)
+
+	header := dns.RR_Header{
+		Name:   ques.Name,
+		Rrtype: dns.TypePTR,
+		Class:  dns.ClassINET,
+		Ttl:    5,
+	}
+	record := &dns.PTR{
+		Hdr: header,
+		Ptr: clnt.DomainName + ".vpn.",
+	}
+	msg.Answer = make([]dns.RR, 1)
+	msg.Answer[0] = record
 
 	return
 }
