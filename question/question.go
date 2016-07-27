@@ -35,24 +35,24 @@ func NewQuestion(ques dns.Question) (q *Question) {
 
 	q.IsIpQuery = q.isIpQuery()
 
-	if dns.IsFqdn(q.Name) {
-		q.NameTrim = q.Name[:len(q.Name)-1]
+	name := strings.ToLower(q.Name)
+
+	if dns.IsFqdn(name) {
+		q.NameTrim = name[:len(name)-1]
 	} else {
-		q.NameTrim = q.Name
+		q.NameTrim = name
 	}
 
-	name := q.NameTrim
-
-	n := strings.LastIndex(name, ".")
+	n := strings.LastIndex(q.NameTrim, ".")
 	if n == -1 {
 		return
 	}
 
-	q.TopDomain = name[n+1:]
-	q.Domain = name[:n]
+	q.TopDomain = q.NameTrim[n+1:]
+	q.Domain = q.NameTrim[:n]
 
 	if q.Qtype == dns.TypePTR {
-		addr := strings.Replace(q.Name, ".in-addr.arpa.", "", 1)
+		addr := strings.Replace(name, ".in-addr.arpa.", "", 1)
 		addrSpl := strings.Split(addr, ".")
 
 		for i, x := range addrSpl {
