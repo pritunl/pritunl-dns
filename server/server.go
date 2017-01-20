@@ -2,6 +2,7 @@ package server
 
 import (
 	"fmt"
+	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/handler"
 	"time"
@@ -35,6 +36,11 @@ func (s *Server) Run() (err error) {
 		if err != nil {
 			panic(err)
 		}
+
+		err = &ServerError{
+			errors.Wrap(err, "server: Unexpected TCP server exit"),
+		}
+		panic(err)
 	}()
 
 	udpHandler := dns.NewServeMux()
@@ -51,6 +57,11 @@ func (s *Server) Run() (err error) {
 		if err != nil {
 			panic(err)
 		}
+
+		err = &ServerError{
+			errors.Wrap(err, "server: Unexpected UDP server exit"),
+		}
+		panic(err)
 	}()
 
 	return
