@@ -33,7 +33,7 @@ func sync() (err error) {
 		dnsServers[svr.Network] = svr.DnsServers
 	}
 
-	err = cursor.Err()
+	err = cursor.Close()
 	if err != nil {
 		err = ParseError(err)
 		return

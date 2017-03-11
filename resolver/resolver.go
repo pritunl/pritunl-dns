@@ -69,7 +69,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		}
 	}
 
-	err = cursor.Err()
+	err = cursor.Close()
 	if err != nil {
 		err = database.ParseError(err)
 		return
