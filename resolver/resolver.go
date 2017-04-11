@@ -204,6 +204,8 @@ func (r *Resolver) Lookup(proto string, servers []string, req *dns.Msg) (
 
 	client := &dns.Client{
 		Net:          proto,
+		Timeout:      3 * time.Second,
+		DialTimeout:  r.Timeout,
 		ReadTimeout:  r.Timeout,
 		WriteTimeout: r.Timeout,
 	}
