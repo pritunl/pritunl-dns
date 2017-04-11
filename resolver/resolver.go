@@ -210,57 +210,23 @@ func (r *Resolver) Lookup(proto string, servers []string, req *dns.Msg) (
 		WriteTimeout: r.Timeout,
 	}
 
-	resChan := make(chan *dns.Msg, 1)
-	waiter := utils.WaitCancel{}
-	var ticker *time.Ticker
-	var resErr error
-
 	if len(servers) == 0 {
 		servers = r.DefaultServers
 	}
 
-	if len(servers) > 2 {
-		ticker = time.NewTicker(r.Interval)
-	}
-
-	for i, nameserver := range servers {
-		if ticker != nil {
-			if i != 0 && i%2 == 0 {
-				select {
-				case res = <-resChan:
-					return
-				case <-ticker.C:
-				}
+	for _, nameserver := range servers {
+		res, _, err = client.Exchange(req, nameserver)
+		if err != nil {
+			err = &ResolveError{
+				errors.Wrap(err, "resolver: Socket error"),
 			}
+			continue
 		}
 
-		waiter.Add(1)
-
-		go func(nameserver string) {
-			exRes, _, e := client.Exchange(req, nameserver)
-			if e != nil {
-				resErr = &ResolveError{
-					errors.Wrap(e, "resolver: Socket error"),
-				}
-				waiter.Done()
-				return
-			}
-
-			select {
-			case resChan <- exRes:
-			default:
-			}
-
-			waiter.Cancel()
-		}(nameserver)
+		break
 	}
 
-	waiter.Wait()
-	select {
-	case res = <-resChan:
-		return
-	default:
-		err = resErr
+	if err != nil {
 		return
 	}
 
