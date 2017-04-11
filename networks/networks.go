@@ -8,9 +8,17 @@ import (
 )
 
 var (
-	Networks   = map[string]*net.IPNet{}
-	lastUpdate = time.Time{}
+	Networks = map[string]*net.IPNet{}
 )
+
+func init() {
+	go func() {
+		for {
+			Update()
+			time.Sleep(30 * time.Second)
+		}
+	}()
+}
 
 func Update() (err error) {
 	ifaces, err := net.Interfaces()
@@ -54,13 +62,6 @@ func Find(ip net.IP) string {
 			if subnet.Contains(ip) {
 				return subnetStr
 			}
-		}
-
-		if i == 0 && time.Since(lastUpdate) > 30*time.Second {
-			lastUpdate = time.Now()
-			Update()
-		} else {
-			break
 		}
 	}
 
