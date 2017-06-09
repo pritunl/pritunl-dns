@@ -46,9 +46,7 @@ func sync() (err error) {
 
 func dnsSync() {
 	for {
-		err := sync()
-		if err != nil {
-		}
+		sync()
 		time.Sleep(mongoRate)
 	}
 }
