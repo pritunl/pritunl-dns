@@ -9,14 +9,13 @@ import (
 )
 
 type Server struct {
-	Host     string
 	Port     int
 	Timeout  time.Duration
 	Interval time.Duration
 }
 
 func (s *Server) Addr() string {
-	return fmt.Sprintf("%s:%d", s.Host, s.Port)
+	return fmt.Sprintf(":%d", s.Port)
 }
 
 func (s *Server) Run() (err error) {

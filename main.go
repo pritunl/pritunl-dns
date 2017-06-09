@@ -9,7 +9,6 @@ import (
 
 func main() {
 	serv := &server.Server{
-		Host:     "0.0.0.0",
 		Port:     53,
 		Timeout:  1 * time.Second,
 		Interval: 100 * time.Millisecond,
