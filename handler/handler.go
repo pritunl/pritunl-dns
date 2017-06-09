@@ -16,6 +16,7 @@ type Handler struct {
 }
 
 func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
+	defer w.Close()
 	ques := question.NewQuestion(r.Question[0])
 
 	subnet := ""
