@@ -15,15 +15,18 @@ type Handler struct {
 	reslvr *resolver.Resolver
 }
 
-func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
+func (h *Handler) Handle(w dns.ResponseWriter, r *dns.Msg) {
 	defer w.Close()
+
 	ques := question.NewQuestion(r.Question[0])
 
+	proto := "udp"
 	subnet := ""
 	if ip, ok := w.RemoteAddr().(*net.UDPAddr); ok {
 		subnet = networks.Find(ip.IP)
 	}
 	if ip, ok := w.RemoteAddr().(*net.TCPAddr); ok {
+		proto = "tcp"
 		subnet = networks.Find(ip.IP)
 	}
 
@@ -57,14 +60,6 @@ func (h *Handler) handle(proto string, w dns.ResponseWriter, r *dns.Msg) {
 
 		w.WriteMsg(res)
 	}
-}
-
-func (h *Handler) HandleTcp(w dns.ResponseWriter, r *dns.Msg) {
-	h.handle("tcp", w, r)
-}
-
-func (h *Handler) HandleUdp(w dns.ResponseWriter, r *dns.Msg) {
-	h.handle("udp", w, r)
 }
 
 func NewHandler(timeout, interval time.Duration) (h *Handler) {

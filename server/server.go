@@ -21,13 +21,11 @@ func (s *Server) Addr() string {
 
 func (s *Server) Run() (err error) {
 	hndlr := handler.NewHandler(s.Timeout, s.Interval)
+	dns.HandleFunc(".", hndlr.Handle)
 
-	tcpHandler := dns.NewServeMux()
-	tcpHandler.HandleFunc(".", hndlr.HandleTcp)
 	tcpServer := &dns.Server{
 		Addr:         s.Addr(),
 		Net:          "tcp",
-		Handler:      tcpHandler,
 		ReadTimeout:  s.Timeout,
 		WriteTimeout: s.Timeout,
 	}
@@ -43,12 +41,9 @@ func (s *Server) Run() (err error) {
 		panic(err)
 	}()
 
-	udpHandler := dns.NewServeMux()
-	udpHandler.HandleFunc(".", hndlr.HandleUdp)
 	udpServer := &dns.Server{
 		Addr:         s.Addr(),
 		Net:          "udp",
-		Handler:      udpHandler,
 		ReadTimeout:  s.Timeout,
 		WriteTimeout: s.Timeout,
 	}
