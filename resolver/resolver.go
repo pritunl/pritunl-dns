@@ -146,7 +146,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			return
 		}
 
-		for i, _ := range msg.Question {
+		for i := range msg.Question {
 			msg.Question[i].Name = origNames[i]
 		}
 	}
