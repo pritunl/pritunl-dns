@@ -40,7 +40,20 @@ func (h *Handler) Handle(w dns.ResponseWriter, r *dns.Msg) {
 	} else if ques.Qclass == dns.ClassINET && ques.Qtype == dns.TypePTR {
 		msg, err := h.reslvr.LookupReverse(ques, r)
 		if err != nil {
-			dns.HandleFailed(w, r)
+			if subnet == "" {
+				for subnet, _ = range database.DnsServers {
+					break
+				}
+			}
+
+			servers := database.DnsServers[subnet]
+			res, err := h.reslvr.Lookup(proto, servers, r)
+			if err != nil {
+				dns.HandleFailed(w, r)
+				return
+			}
+
+			w.WriteMsg(res)
 			return
 		}
 		w.WriteMsg(msg)
