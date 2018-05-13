@@ -175,7 +175,6 @@ func (r *Resolver) LookupReverse(ques *question.Question, req *dns.Msg) (
 		"domain_name": 1,
 	}).One(&clnt)
 	if err != nil {
-		println(err.Error())
 		err = database.ParseError(err)
 		return
 	}
