@@ -32,7 +32,9 @@ func Update() (err error) {
 	networks := map[string]*net.IPNet{}
 
 	for _, iface := range ifaces {
-		if !strings.Contains(iface.Name, "tun") {
+		if !strings.Contains(iface.Name, "tun") &&
+			!strings.Contains(iface.Name, "wg") {
+
 			continue
 		}
 
