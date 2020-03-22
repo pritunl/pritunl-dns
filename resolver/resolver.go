@@ -15,6 +15,7 @@ import (
 
 type Client struct {
 	Network     string   `bson:"network"`
+	NetworkWg   string   `bson:"network_wg"`
 	DomainName  string   `bson:"domain_name"`
 	VirtAddress string   `bson:"virt_address"`
 	DnsServers  []string `bson:"dns_servers"`
@@ -57,6 +58,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		},
 	}).Select(bson.M{
 		"network":      1,
+		"network_wg":   1,
 		"virt_address": 1,
 		"dns_servers":  1,
 		"dns_suffix":   1,
@@ -64,7 +66,9 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 
 	clnt := Client{}
 	for cursor.Next(&clnt) {
-		if clnt.Network == subnet || subnet == "" {
+		if clnt.Network == subnet || clnt.NetworkWg == subnet ||
+			subnet == "" {
+
 			break
 		}
 	}
