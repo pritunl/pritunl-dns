@@ -99,7 +99,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			msg.Answer = append(msg.Answer, record)
 		}
 
-		if ques.Qtype == dns.TypeAAAA {
+		if ques.Qtype == dns.TypeAAAA && clnt.VirtAddress6 != "" {
 			record6, e := r.createIpv6Record(ques, clnt)
 			if e != nil {
 				err = &ResolveError{
