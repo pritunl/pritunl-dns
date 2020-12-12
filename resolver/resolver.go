@@ -14,12 +14,13 @@ import (
 )
 
 type Client struct {
-	Network     string   `bson:"network"`
-	NetworkWg   string   `bson:"network_wg"`
-	DomainName  string   `bson:"domain_name"`
-	VirtAddress string   `bson:"virt_address"`
-	DnsServers  []string `bson:"dns_servers"`
-	DnsSuffix   string   `bson:"dns_suffix"`
+	Network      string   `bson:"network"`
+	NetworkWg    string   `bson:"network_wg"`
+	DomainName   string   `bson:"domain_name"`
+	VirtAddress  string   `bson:"virt_address"`
+	VirtAddress6 string   `bson:"virt_address6"`
+	DnsServers   []string `bson:"dns_servers"`
+	DnsSuffix    string   `bson:"dns_suffix"`
 }
 
 type Resolver struct {
@@ -57,11 +58,12 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			Data: key[:],
 		},
 	}).Select(bson.M{
-		"network":      1,
-		"network_wg":   1,
-		"virt_address": 1,
-		"dns_servers":  1,
-		"dns_suffix":   1,
+		"network":       1,
+		"network_wg":    1,
+		"virt_address":  1,
+		"virt_address6": 1,
+		"dns_servers":   1,
+		"dns_suffix":    1,
 	}).Iter()
 
 	clnt := Client{}
@@ -79,37 +81,32 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		return
 	}
 
-	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
-	if clientIpStr == "" {
-		err = &UnknownError{
-			errors.New("resolver: Failed to find ip"),
-		}
-		return
-	}
-
-	clientIp := net.ParseIP(clientIpStr)
-	if err != nil {
-		err = &UnknownError{
-			errors.Wrap(err, "resolver: Unknown parse error"),
-		}
-	}
-
 	if subDomain == "" {
 		msg = &dns.Msg{}
 		msg.SetReply(req)
+		msg.Answer = make([]dns.RR, 0)
 
-		header := dns.RR_Header{
-			Name:   ques.Name,
-			Rrtype: dns.TypeA,
-			Class:  dns.ClassINET,
-			Ttl:    5,
+		if ques.Qtype == dns.TypeA {
+			if dnsA, v4err := r.createIpv4Record(ques, clnt); v4err != nil {
+				err = &ResolveError{
+					errors.New(v4err.Error()),
+				}
+				return
+			} else {
+				msg.Answer = append(msg.Answer, dnsA)
+			}
 		}
-		record := &dns.A{
-			Hdr: header,
-			A:   clientIp,
+
+		if ques.Qtype == dns.TypeAAAA {
+			if dnsAAAA, v6err := r.createIpv6Record(ques, clnt); v6err != nil {
+				err = &ResolveError{
+					errors.New(v6err.Error()),
+				}
+				return
+			} else {
+				msg.Answer = append(msg.Answer, dnsAAAA)
+			}
 		}
-		msg.Answer = make([]dns.RR, 1)
-		msg.Answer[0] = record
 	} else {
 		servers := clnt.DnsServers
 
@@ -156,6 +153,56 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 	}
 
 	return
+}
+
+func (r *Resolver) createIpv4Record(ques *question.Question, clnt Client) (dns.RR, error) {
+	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
+	if clientIpStr == "" {
+		return nil, errors.New("resolver: Failed to find IPv4")
+	}
+
+	clientIp := net.ParseIP(clientIpStr)
+	if clientIp == nil {
+		return nil, errors.New("resolver: Unknown parse IPv4 error")
+	}
+
+	header := dns.RR_Header{
+		Name:   ques.Name,
+		Rrtype: dns.TypeA,
+		Class:  dns.ClassINET,
+		Ttl:    5,
+	}
+	record := &dns.A{
+		Hdr: header,
+		A:   clientIp,
+	}
+
+	return record, nil
+}
+
+func (r *Resolver) createIpv6Record(ques *question.Question, clnt Client) (dns.RR, error) {
+	clientIpStr6 := strings.Split(clnt.VirtAddress6, "/")[0]
+	if clientIpStr6 == "" {
+		return nil, errors.New("resolver: Failed to find IPv6")
+	}
+
+	clientIp6 := net.ParseIP(clientIpStr6)
+	if clientIp6 == nil {
+		return nil, errors.New("resolver: Unknown parse IPv6 error")
+	}
+
+	header6 := dns.RR_Header{
+		Name:   ques.Name,
+		Rrtype: dns.TypeAAAA,
+		Class:  dns.ClassINET,
+		Ttl:    5,
+	}
+	record6 := &dns.AAAA{
+		Hdr:  header6,
+		AAAA: clientIp6,
+	}
+
+	return record6, nil
 }
 
 func (r *Resolver) LookupReverse(ques *question.Question, req *dns.Msg) (
