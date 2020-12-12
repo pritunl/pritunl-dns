@@ -2,15 +2,16 @@ package resolver
 
 import (
 	"crypto/md5"
+	"net"
+	"strings"
+	"time"
+
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/utils"
 	"gopkg.in/mgo.v2/bson"
-	"net"
-	"strings"
-	"time"
 )
 
 type Client struct {
@@ -87,25 +88,27 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		msg.Answer = make([]dns.RR, 0)
 
 		if ques.Qtype == dns.TypeA {
-			if dnsA, v4err := r.createIpv4Record(ques, clnt); v4err != nil {
+			record, e := r.createIpv4Record(ques, clnt)
+			if e != nil {
 				err = &ResolveError{
-					errors.New(v4err.Error()),
+					errors.Wrap(e, "resolver: Failed to create record"),
 				}
 				return
-			} else {
-				msg.Answer = append(msg.Answer, dnsA)
 			}
+
+			msg.Answer = append(msg.Answer, record)
 		}
 
 		if ques.Qtype == dns.TypeAAAA {
-			if dnsAAAA, v6err := r.createIpv6Record(ques, clnt); v6err != nil {
+			record6, e := r.createIpv6Record(ques, clnt)
+			if e != nil {
 				err = &ResolveError{
-					errors.New(v6err.Error()),
+					errors.Wrap(e, "resolver: Failed to create record6"),
 				}
 				return
-			} else {
-				msg.Answer = append(msg.Answer, dnsAAAA)
 			}
+
+			msg.Answer = append(msg.Answer, record6)
 		}
 	} else {
 		servers := clnt.DnsServers
@@ -155,15 +158,23 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 	return
 }
 
-func (r *Resolver) createIpv4Record(ques *question.Question, clnt Client) (dns.RR, error) {
+func (r *Resolver) createIpv4Record(ques *question.Question,
+	clnt Client) (record dns.RR, err error) {
+
 	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
 	if clientIpStr == "" {
-		return nil, errors.New("resolver: Failed to find IPv4")
+		err = &UnknownError{
+			errors.New("resolver: Failed to find IPv4"),
+		}
+		return
 	}
 
 	clientIp := net.ParseIP(clientIpStr)
 	if clientIp == nil {
-		return nil, errors.New("resolver: Unknown parse IPv4 error")
+		err = &UnknownError{
+			errors.New("resolver: Unknown parse IPv4 error"),
+		}
+		return
 	}
 
 	header := dns.RR_Header{
@@ -172,23 +183,31 @@ func (r *Resolver) createIpv4Record(ques *question.Question, clnt Client) (dns.R
 		Class:  dns.ClassINET,
 		Ttl:    5,
 	}
-	record := &dns.A{
+	record = &dns.A{
 		Hdr: header,
 		A:   clientIp,
 	}
 
-	return record, nil
+	return
 }
 
-func (r *Resolver) createIpv6Record(ques *question.Question, clnt Client) (dns.RR, error) {
+func (r *Resolver) createIpv6Record(ques *question.Question,
+	clnt Client) (record6 dns.RR, err error) {
+
 	clientIpStr6 := strings.Split(clnt.VirtAddress6, "/")[0]
 	if clientIpStr6 == "" {
-		return nil, errors.New("resolver: Failed to find IPv6")
+		err = &UnknownError{
+			errors.New("resolver: Failed to find IPv6"),
+		}
+		return
 	}
 
 	clientIp6 := net.ParseIP(clientIpStr6)
 	if clientIp6 == nil {
-		return nil, errors.New("resolver: Unknown parse IPv6 error")
+		err = &UnknownError{
+			errors.New("resolver: Unknown parse IPv6 error"),
+		}
+		return
 	}
 
 	header6 := dns.RR_Header{
@@ -197,12 +216,12 @@ func (r *Resolver) createIpv6Record(ques *question.Question, clnt Client) (dns.R
 		Class:  dns.ClassINET,
 		Ttl:    5,
 	}
-	record6 := &dns.AAAA{
+	record6 = &dns.AAAA{
 		Hdr:  header6,
 		AAAA: clientIp6,
 	}
 
-	return record6, nil
+	return
 }
 
 func (r *Resolver) LookupReverse(ques *question.Question, req *dns.Msg) (
