@@ -15,6 +15,7 @@ import (
 )
 
 type Client struct {
+	Ipv6         bool     `bson:"ipv6"`
 	Network      string   `bson:"network"`
 	NetworkWg    string   `bson:"network_wg"`
 	DomainName   string   `bson:"domain_name"`
@@ -99,7 +100,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			msg.Answer = append(msg.Answer, record)
 		}
 
-		if ques.Qtype == dns.TypeAAAA && clnt.VirtAddress6 != "" {
+		if ques.Qtype == dns.TypeAAAA && clnt.Ipv6 {
 			record6, e := r.createIpv6Record(ques, clnt)
 			if e != nil {
 				err = &ResolveError{
