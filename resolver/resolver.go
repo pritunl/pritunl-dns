@@ -60,6 +60,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 			Data: key[:],
 		},
 	}).Select(bson.M{
+		"ipv6":          1,
 		"network":       1,
 		"network_wg":    1,
 		"virt_address":  1,
