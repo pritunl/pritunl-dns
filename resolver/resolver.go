@@ -6,12 +6,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pritunl/mongo-go-driver/bson/primitive"
+	"github.com/pritunl/mongo-go-driver/mongo/options"
+
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
+	"github.com/pritunl/mongo-go-driver/bson"
 	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/utils"
-	"gopkg.in/mgo.v2/bson"
+)
+
+const (
+	BinaryMD5 byte = 0x05
 )
 
 type Client struct {
@@ -54,23 +61,41 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 	coll := db.Clients()
 
 	key := md5.Sum([]byte(domain))
-	cursor := coll.Find(bson.M{
-		"domain": bson.Binary{
-			Kind: 0x05,
-			Data: key[:],
+	cursor, err := coll.Find(
+		db,
+		&bson.M{
+			"domain": primitive.Binary{
+				Subtype: BinaryMD5,
+				Data:    key[:],
+			},
 		},
-	}).Select(bson.M{
-		"ipv6":          1,
-		"network":       1,
-		"network_wg":    1,
-		"virt_address":  1,
-		"virt_address6": 1,
-		"dns_servers":   1,
-		"dns_suffix":    1,
-	}).Iter()
+		&options.FindOptions{
+			Projection: &bson.D{
+				{"ipv6", 1},
+				{"network", 1},
+				{"network_wg", 1},
+				{"virt_address", 1},
+				{"virt_address6", 1},
+				{"dns_servers", 1},
+				{"dns_suffix", 1},
+			},
+		},
+	)
+	if err != nil {
+		err = database.ParseError(err)
+		return
+	}
+	defer cursor.Close(db)
 
-	clnt := Client{}
-	for cursor.Next(&clnt) {
+	clnt := &Client{}
+	for cursor.Next(db) {
+		clnt = &Client{}
+		err = cursor.Decode(clnt)
+		if err != nil {
+			err = database.ParseError(err)
+			return
+		}
+
 		if clnt.Network == subnet || clnt.NetworkWg == subnet ||
 			subnet == "" {
 
@@ -78,7 +103,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 		}
 	}
 
-	err = cursor.Close()
+	err = cursor.Err()
 	if err != nil {
 		err = database.ParseError(err)
 		return
@@ -161,7 +186,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 }
 
 func (r *Resolver) createIpv4Record(ques *question.Question,
-	clnt Client) (record dns.RR, err error) {
+	clnt *Client) (record dns.RR, err error) {
 
 	clientIpStr := strings.Split(clnt.VirtAddress, "/")[0]
 	if clientIpStr == "" {
@@ -194,7 +219,7 @@ func (r *Resolver) createIpv4Record(ques *question.Question,
 }
 
 func (r *Resolver) createIpv6Record(ques *question.Question,
-	clnt Client) (record6 dns.RR, err error) {
+	clnt *Client) (record6 dns.RR, err error) {
 
 	clientIpStr6 := strings.Split(clnt.VirtAddress6, "/")[0]
 	if clientIpStr6 == "" {
@@ -240,12 +265,18 @@ func (r *Resolver) LookupReverse(ques *question.Question, req *dns.Msg) (
 	defer db.Close()
 	coll := db.Clients()
 
-	clnt := Client{}
-	err = coll.Find(bson.M{
-		"virt_address_num": ques.AddressNum,
-	}).Select(bson.M{
-		"domain_name": 1,
-	}).One(&clnt)
+	clnt := &Client{}
+	err = coll.FindOne(
+		db,
+		&bson.M{
+			"virt_address_num": ques.AddressNum,
+		},
+		&options.FindOneOptions{
+			Projection: &bson.D{
+				{"domain_name", 1},
+			},
+		},
+	).Decode(clnt)
 	if err != nil {
 		err = database.ParseError(err)
 		return

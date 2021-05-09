@@ -1,13 +1,19 @@
 package main
 
 import (
-	"github.com/pritunl/pritunl-dns/server"
 	"os"
 	"os/signal"
 	"time"
+
+	"github.com/pritunl/pritunl-dns/database"
+	"github.com/pritunl/pritunl-dns/logger"
+	"github.com/pritunl/pritunl-dns/server"
 )
 
 func main() {
+	logger.Init()
+	database.Init()
+
 	serv := &server.Server{
 		Port:     53,
 		Timeout:  1 * time.Second,

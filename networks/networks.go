@@ -1,10 +1,11 @@
 package networks
 
 import (
-	"github.com/dropbox/godropbox/errors"
 	"net"
 	"strings"
 	"time"
+
+	"github.com/dropbox/godropbox/errors"
 )
 
 var (

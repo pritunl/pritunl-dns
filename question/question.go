@@ -1,9 +1,10 @@
 package question
 
 import (
-	"github.com/miekg/dns"
 	"strconv"
 	"strings"
+
+	"github.com/miekg/dns"
 )
 
 type Question struct {

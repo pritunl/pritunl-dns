@@ -1,14 +1,16 @@
 package handler
 
 import (
+	"github.com/sirupsen/logrus"
+	"net"
+	"time"
+
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/constants"
 	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/networks"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
-	"net"
-	"time"
 )
 
 type Handler struct {

@@ -2,10 +2,11 @@ package server
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/dropbox/godropbox/errors"
 	"github.com/miekg/dns"
 	"github.com/pritunl/pritunl-dns/handler"
-	"time"
 )
 
 type Server struct {
