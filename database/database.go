@@ -1,40 +1,72 @@
 package database
 
 import (
-	"crypto/tls"
-	"crypto/x509"
-	"github.com/dropbox/godropbox/errors"
-	"github.com/pritunl/pritunl-dns/constants"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/mgo.v2"
-	"io/ioutil"
-	"net"
+	"context"
 	"net/url"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/dropbox/godropbox/errors"
+	"github.com/pritunl/mongo-go-driver/mongo"
+	"github.com/pritunl/mongo-go-driver/mongo/options"
+	"github.com/pritunl/pritunl-dns/constants"
+	"github.com/sirupsen/logrus"
 )
 
 var (
-	mongoUrl    string
-	mongoPrefix string
-	mongoRate   time.Duration
-	Session     *mgo.Session
+	mongoUri        string
+	mongoPrefix     string
+	mongoRate       time.Duration
+	Client          *mongo.Client
+	DefaultDatabase string
 )
 
 type Database struct {
-	session  *mgo.Session
-	database *mgo.Database
+	ctx      context.Context
+	client   *mongo.Client
+	database *mongo.Database
+}
+
+func (d *Database) Deadline() (time.Time, bool) {
+	if d.ctx != nil {
+		return d.ctx.Deadline()
+	}
+	return time.Time{}, false
+}
+
+func (d *Database) Done() <-chan struct{} {
+	if d.ctx != nil {
+		return d.ctx.Done()
+	}
+	return nil
+}
+
+func (d *Database) Err() error {
+	if d.ctx != nil {
+		return d.ctx.Err()
+	}
+	return nil
+}
+
+func (d *Database) Value(key interface{}) interface{} {
+	if d.ctx != nil {
+		return d.ctx.Value(key)
+	}
+	return nil
+}
+
+func (d *Database) String() string {
+	return "context.database"
 }
 
 func (d *Database) Close() {
-	d.session.Close()
 }
 
 func (d *Database) getCollection(name string) (coll *Collection) {
 	coll = &Collection{
-		*d.database.C(name),
-		d,
+		db:         d,
+		Collection: d.database.Collection(name),
 	}
 	return
 }
@@ -50,7 +82,7 @@ func (d *Database) Servers() (coll *Collection) {
 }
 
 func Connect() (err error) {
-	mgoUrl, err := url.Parse(mongoUrl)
+	mongoUrl, err := url.Parse(mongoUri)
 	if err != nil {
 		err = &ConnectionError{
 			errors.Wrap(err, "database: Failed to parse mongo uri"),
@@ -58,87 +90,66 @@ func Connect() (err error) {
 		return
 	}
 
-	vals := mgoUrl.Query()
-	mgoSsl := vals.Get("ssl")
-	mgoSslCerts := vals.Get("ssl_ca_certs")
-	vals.Del("ssl")
-	vals.Del("ssl_ca_certs")
-	mgoUrl.RawQuery = vals.Encode()
-	mgoUri := mgoUrl.String()
-
-	if mgoSsl == "true" {
-		info, e := mgo.ParseURL(mgoUri)
-		if e != nil {
-			err = &ConnectionError{
-				errors.Wrap(e, "database: Failed to parse mongo url"),
-			}
-			return
-		}
-
-		info.DialServer = func(addr *mgo.ServerAddr) (
-			conn net.Conn, err error) {
-
-			tlsConf := &tls.Config{}
-
-			if mgoSslCerts != "" {
-				caData, e := ioutil.ReadFile(mgoSslCerts)
-				if e != nil {
-					err = &CertificateError{
-						errors.Wrap(e, "database: Failed to load certificate"),
-					}
-					return
-				}
-
-				caPool := x509.NewCertPool()
-				if ok := caPool.AppendCertsFromPEM(caData); !ok {
-					err = &CertificateError{
-						errors.Wrap(err,
-							"database: Failed to parse certificate"),
-					}
-					return
-				}
-
-				tlsConf.RootCAs = caPool
-			}
-
-			conn, err = tls.Dial("tcp", addr.String(), tlsConf)
-			return
-		}
-		Session, err = mgo.DialWithInfo(info)
-		if err != nil {
-			err = &ConnectionError{
-				errors.Wrap(err, "database: Connection error"),
-			}
-			return
-		}
-	} else {
-		Session, err = mgo.Dial(mgoUri)
-		if err != nil {
-			err = &ConnectionError{
-				errors.Wrap(err, "database: Connection error"),
-			}
-			return
-		}
+	path := mongoUrl.Path
+	if len(path) > 1 {
+		DefaultDatabase = path[1:]
 	}
 
-	Session.SetMode(mgo.Strong, true)
+	opts := options.Client().ApplyURI(mongoUri)
+	client, err := mongo.NewClient(opts)
+	if err != nil {
+		err = &ConnectionError{
+			errors.Wrap(err, "database: Client error"),
+		}
+		return
+	}
+
+	err = client.Connect(context.TODO())
+	if err != nil {
+		err = &ConnectionError{
+			errors.Wrap(err, "database: Connection error"),
+		}
+		return
+	}
+
+	Client = client
 
 	return
 }
 
 func GetDatabase() (db *Database) {
-	session := Session.Copy()
-	database := session.DB("")
+	client := Client
+	if client == nil {
+		return
+	}
+
+	database := client.Database(DefaultDatabase)
 
 	db = &Database{
-		session:  session,
+		client:   client,
 		database: database,
 	}
 	return
 }
 
-func init() {
-	mongoUrl = os.Getenv("DB")
+func GetDatabaseCtx(ctx context.Context) (db *Database) {
+	client := Client
+	if client == nil {
+		return
+	}
+
+	database := client.Database(DefaultDatabase)
+
+	db = &Database{
+		ctx:      ctx,
+		client:   client,
+		database: database,
+	}
+	return
+}
+
+func Init() {
+	mongoUri = os.Getenv("DB")
 	mongoPrefix = os.Getenv("DB_PREFIX")
 
 	mongoRateStr := os.Getenv("DB_SYNC_RATE")
@@ -158,7 +169,7 @@ func init() {
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"error": err,
-			}).Error("database: Connection")
+			}).Error("database: Connection error")
 		} else {
 			break
 		}
@@ -166,5 +177,5 @@ func init() {
 		time.Sleep(1 * time.Second)
 	}
 
-	go dnsSync()
+	return
 }

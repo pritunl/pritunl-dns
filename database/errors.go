@@ -4,10 +4,6 @@ import (
 	"github.com/dropbox/godropbox/errors"
 )
 
-type CertificateError struct {
-	errors.DropboxError
-}
-
 type ConnectionError struct {
 	errors.DropboxError
 }
@@ -25,5 +21,9 @@ type DuplicateKeyError struct {
 }
 
 type UnknownError struct {
+	errors.DropboxError
+}
+
+type CertificateError struct {
 	errors.DropboxError
 }

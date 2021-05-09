@@ -1,8 +1,11 @@
 package database
 
 import (
-	"gopkg.in/mgo.v2/bson"
 	"time"
+
+	"github.com/pritunl/mongo-go-driver/bson"
+	"github.com/pritunl/mongo-go-driver/mongo/options"
+	"github.com/sirupsen/logrus"
 )
 
 var DnsServers = map[string][]string{}
@@ -19,13 +22,30 @@ func sync() (err error) {
 	defer db.Close()
 	coll := db.Servers()
 
-	cursor := coll.Find(bson.M{}).Select(bson.M{
-		"network":     1,
-		"dns_servers": 1,
-	}).Iter()
+	cursor, err := coll.Find(
+		db,
+		&bson.M{},
+		&options.FindOptions{
+			Projection: &bson.D{
+				{"network", 1},
+				{"dns_servers", 1},
+			},
+		},
+	)
+	if err != nil {
+		err = ParseError(err)
+		return
+	}
+	defer cursor.Close(db)
 
-	svr := server{}
-	for cursor.Next(&svr) {
+	for cursor.Next(db) {
+		svr := &server{}
+		err = cursor.Decode(svr)
+		if err != nil {
+			err = ParseError(err)
+			return
+		}
+
 		for i, dnsSvr := range svr.DnsServers {
 			svr.DnsServers[i] = dnsSvr + ":53"
 		}
@@ -33,7 +53,7 @@ func sync() (err error) {
 		dnsServers[svr.Network] = svr.DnsServers
 	}
 
-	err = cursor.Close()
+	err = cursor.Err()
 	if err != nil {
 		err = ParseError(err)
 		return
@@ -46,7 +66,13 @@ func sync() (err error) {
 
 func dnsSync() {
 	for {
-		sync()
+		err := sync()
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("database: Sync dns error")
+		}
+
 		time.Sleep(mongoRate)
 	}
 }
