@@ -87,7 +87,7 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 	}
 	defer cursor.Close(db)
 
-	clnt := &Client{}
+	var clnt *Client
 	for cursor.Next(db) {
 		clnt = &Client{}
 		err = cursor.Decode(clnt)
@@ -101,6 +101,10 @@ func (r *Resolver) LookupUser(proto string, ques *question.Question,
 
 			break
 		}
+	}
+
+	if clnt == nil {
+		return
 	}
 
 	err = cursor.Err()

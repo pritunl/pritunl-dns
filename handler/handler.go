@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/sirupsen/logrus"
 	"net"
 	"time"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/pritunl/pritunl-dns/networks"
 	"github.com/pritunl/pritunl-dns/question"
 	"github.com/pritunl/pritunl-dns/resolver"
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
@@ -35,6 +35,12 @@ func (h *Handler) Handle(w dns.ResponseWriter, r *dns.Msg) {
 	if ques.IsIpQuery && ques.TopDomain == "vpn" {
 		msg, err := h.reslvr.LookupUser(proto, ques, subnet, r)
 		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"error": err,
+			}).Error("database: Lookup error")
+			dns.HandleFailed(w, r)
+			return
+		} else if msg == nil {
 			dns.HandleFailed(w, r)
 			return
 		}
