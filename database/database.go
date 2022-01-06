@@ -177,5 +177,7 @@ func Init() {
 		time.Sleep(1 * time.Second)
 	}
 
+	go dnsSync()
+
 	return
 }
