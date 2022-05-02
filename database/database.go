@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/dropbox/godropbox/errors"
 	"github.com/pritunl/mongo-go-driver/mongo"
 	"github.com/pritunl/mongo-go-driver/mongo/options"
+	"github.com/pritunl/mongo-go-driver/x/mongo/driver/connstring"
 	"github.com/pritunl/pritunl-dns/constants"
 	"github.com/sirupsen/logrus"
 )
@@ -82,7 +82,7 @@ func (d *Database) Servers() (coll *Collection) {
 }
 
 func Connect() (err error) {
-	mongoUrl, err := url.Parse(mongoUri)
+	mongoUrl, err := connstring.ParseAndValidate(mongoUri)
 	if err != nil {
 		err = &ConnectionError{
 			errors.Wrap(err, "database: Failed to parse mongo uri"),
@@ -90,9 +90,8 @@ func Connect() (err error) {
 		return
 	}
 
-	path := mongoUrl.Path
-	if len(path) > 1 {
-		DefaultDatabase = path[1:]
+	if mongoUrl.Database != "" {
+		DefaultDatabase = mongoUrl.Database
 	}
 
 	opts := options.Client().ApplyURI(mongoUri)
