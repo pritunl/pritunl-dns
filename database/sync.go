@@ -53,7 +53,9 @@ func sync() (err error) {
 		}
 
 		dnsServers[svr.Network] = svr.DnsServers
-		dnsServers[svr.NetworkWg] = svr.DnsServers
+		if svr.NetworkWg != "" {
+			dnsServers[svr.NetworkWg] = svr.DnsServers
+		}
 	}
 
 	err = cursor.Err()
