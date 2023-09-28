@@ -12,6 +12,7 @@ var DnsServers = map[string][]string{}
 
 type server struct {
 	Network    string   `bson:"network"`
+	NetworkWg  string   `bson:"network_wg"`
 	DnsServers []string `bson:"dns_servers"`
 }
 
@@ -28,6 +29,7 @@ func sync() (err error) {
 		&options.FindOptions{
 			Projection: &bson.D{
 				{"network", 1},
+				{"network_wg", 1},
 				{"dns_servers", 1},
 			},
 		},
@@ -51,6 +53,7 @@ func sync() (err error) {
 		}
 
 		dnsServers[svr.Network] = svr.DnsServers
+		dnsServers[svr.NetworkWg] = svr.DnsServers
 	}
 
 	err = cursor.Err()
