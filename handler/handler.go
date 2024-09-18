@@ -23,14 +23,15 @@ func (h *Handler) Handle(w dns.ResponseWriter, r *dns.Msg) {
 	ques := question.NewQuestion(r.Question[0])
 
 	proto := "udp"
-	subnet := ""
+	var remoteAddr net.IP
 	if ip, ok := w.RemoteAddr().(*net.UDPAddr); ok {
-		subnet = networks.Find(ip.IP)
+		remoteAddr = ip.IP
 	}
 	if ip, ok := w.RemoteAddr().(*net.TCPAddr); ok {
+		remoteAddr = ip.IP
 		proto = "tcp"
-		subnet = networks.Find(ip.IP)
 	}
+	subnet := networks.Find(remoteAddr)
 
 	if ques.IsIpQuery && ques.TopDomain == "vpn" {
 		msg, err := h.reslvr.LookupUser(proto, ques, subnet, r)
