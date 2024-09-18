@@ -39,14 +39,14 @@ func Update() (err error) {
 			continue
 		}
 
-		addrs, err := iface.Addrs()
-		if err != nil {
+		addrs, e := iface.Addrs()
+		if e != nil {
 			continue
 		}
 
 		for _, addr := range addrs {
-			_, subnet, err := net.ParseCIDR(addr.String())
-			if err != nil {
+			_, subnet, er := net.ParseCIDR(addr.String())
+			if er != nil {
 				continue
 			}
 

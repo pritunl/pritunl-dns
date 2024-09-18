@@ -30,15 +30,15 @@ func (s *Server) Run() (err error) {
 		WriteTimeout: s.Timeout,
 	}
 	go func() {
-		err := tcpServer.ListenAndServe()
-		if err != nil {
-			panic(err)
+		e := tcpServer.ListenAndServe()
+		if e != nil {
+			panic(e)
 		}
 
-		err = &ServerError{
-			errors.Wrap(err, "server: Unexpected TCP server exit"),
+		e = &ServerError{
+			errors.Wrap(e, "server: Unexpected TCP server exit"),
 		}
-		panic(err)
+		panic(e)
 	}()
 
 	udpServer := &dns.Server{
@@ -48,15 +48,15 @@ func (s *Server) Run() (err error) {
 		WriteTimeout: s.Timeout,
 	}
 	go func() {
-		err := udpServer.ListenAndServe()
-		if err != nil {
-			panic(err)
+		e := udpServer.ListenAndServe()
+		if e != nil {
+			panic(e)
 		}
 
-		err = &ServerError{
-			errors.Wrap(err, "server: Unexpected UDP server exit"),
+		e = &ServerError{
+			errors.Wrap(e, "server: Unexpected UDP server exit"),
 		}
-		panic(err)
+		panic(e)
 	}()
 
 	return
