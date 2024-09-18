@@ -8,11 +8,17 @@ import (
 	"github.com/pritunl/pritunl-dns/database"
 	"github.com/pritunl/pritunl-dns/logger"
 	"github.com/pritunl/pritunl-dns/server"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
 	logger.Init()
 	database.Init()
+
+	logrus.WithFields(logrus.Fields{
+		"port":     53,
+		"protocol": "tcp/udp",
+	}).Info("main: Starting DNS server")
 
 	serv := &server.Server{
 		Port:     53,
