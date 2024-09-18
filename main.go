@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/pritunl/pritunl-dns/database"
@@ -27,14 +28,7 @@ func main() {
 	}
 	serv.Run()
 
-	sig := make(chan os.Signal)
-	signal.Notify(sig, os.Interrupt)
-
-forever:
-	for {
-		select {
-		case <-sig:
-			break forever
-		}
-	}
+	sig := make(chan os.Signal, 2)
+	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
+	<-sig
 }
