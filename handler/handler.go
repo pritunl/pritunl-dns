@@ -84,11 +84,10 @@ func (h *Handler) Handle(w dns.ResponseWriter, r *dns.Msg) {
 	}
 }
 
-func NewHandler(timeout, interval time.Duration) (h *Handler) {
+func NewHandler(timeout time.Duration) (h *Handler) {
 	h = &Handler{
 		reslvr: &resolver.Resolver{
 			Timeout:        timeout,
-			Interval:       interval,
 			DefaultServers: constants.DefaultDnsServers,
 		},
 	}

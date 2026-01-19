@@ -22,9 +22,8 @@ func main() {
 	}).Info("main: Starting DNS server")
 
 	serv := &server.Server{
-		Port:     53,
-		Timeout:  1 * time.Second,
-		Interval: 100 * time.Millisecond,
+		Port:    53,
+		Timeout: 3 * time.Second,
 	}
 	serv.Run()
 

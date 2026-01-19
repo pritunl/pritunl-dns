@@ -10,9 +10,8 @@ import (
 )
 
 type Server struct {
-	Port     int
-	Timeout  time.Duration
-	Interval time.Duration
+	Port    int
+	Timeout time.Duration
 }
 
 func (s *Server) Addr() string {
@@ -20,7 +19,7 @@ func (s *Server) Addr() string {
 }
 
 func (s *Server) Run() (err error) {
-	hndlr := handler.NewHandler(s.Timeout, s.Interval)
+	hndlr := handler.NewHandler(s.Timeout)
 	dns.HandleFunc(".", hndlr.Handle)
 
 	tcpServer := &dns.Server{

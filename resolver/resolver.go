@@ -33,7 +33,6 @@ type Client struct {
 
 type Resolver struct {
 	Timeout        time.Duration
-	Interval       time.Duration
 	DefaultServers []string
 }
 
@@ -309,7 +308,7 @@ func (r *Resolver) Lookup(proto string, servers []string, req *dns.Msg) (
 
 	client := &dns.Client{
 		Net:          proto,
-		Timeout:      3 * time.Second,
+		Timeout:      r.Timeout,
 		DialTimeout:  r.Timeout,
 		ReadTimeout:  r.Timeout,
 		WriteTimeout: r.Timeout,
